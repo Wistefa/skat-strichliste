@@ -907,6 +907,53 @@
            .entry-preview    { font-size: 0.85rem; }
        }
 
+       /* ── Spieltag Toolbar ── */
+       .spieltag-toolbar {
+           display: flex;
+           align-items: center;
+           gap: 10px;
+           flex-wrap: wrap;
+           margin-bottom: 20px;
+           background: #fffef0;
+           border: 1px solid #c8952a;
+           border-radius: 10px;
+           padding: 12px 16px;
+       }
+
+       .spieltag-toolbar input[type="text"] {
+           flex: 1;
+           min-width: 160px;
+           padding: 8px 12px;
+           border: 1px solid #ddd;
+           border-radius: 7px;
+           font-size: 0.9rem;
+       }
+
+       .btn-spieltag {
+           display: inline-flex;
+           align-items: center;
+           gap: 6px;
+           padding: 8px 16px;
+           border: none;
+           border-radius: 7px;
+           font-size: 0.88rem;
+           font-weight: 600;
+           cursor: pointer;
+           white-space: nowrap;
+       }
+
+       .btn-spieltag-save {
+           background: linear-gradient(135deg, #1b4332, #2d6a4f);
+           color: #f0d080;
+           border: 1px solid #c8952a;
+       }
+
+       .btn-spieltag-load {
+           background: #f5f5f5;
+           color: #333;
+           border: 1px solid #ccc;
+       }
+
        /* Sehr kleine Bildschirme (iPhone SE etc.) */
        @media (max-width: 390px) {
            header h1 { font-size: 1.3rem; }
@@ -1131,6 +1178,14 @@
            </div>
 
            <div class="history-section" id="historySection" style="display: none;">
+               <div class="spieltag-toolbar">
+                   <input type="text" id="spieltagName" placeholder="Name (z.B. Spieltag 26.05.2026)">
+                   <button class="btn-spieltag btn-spieltag-save" onclick="saveSpieldag()">💾 Speichern</button>
+                   <label class="btn-spieltag btn-spieltag-load" style="cursor:pointer;">
+                       📂 Laden
+                       <input type="file" id="loadFileInput" accept=".json" style="display:none" onchange="loadFromFile(this)">
+                   </label>
+               </div>
                <h3>📊 Strichliste (Nur eingetragene Minuszahlen)</h3>
                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                <table id="historyTable">
@@ -1176,8 +1231,9 @@
        let players = [];
        let currentRound = 0;
        let currentDealer = 3;
-       let bockGamesRemaining = 0;  // verbleibende Bock-Spiele gesamt (à 4 pro Runde)
-       let bockTotalTriggered = 0; // Gesamtzahl ausgelöster Bockrunden
+       let bockGamesRemaining = 0;
+       let bockTotalTriggered = 0;
+       let gameHistory = [];
 
        function setupPlayers() {
            // Namen einlesen
@@ -1443,9 +1499,11 @@
            `;
 
            // Punkte eintragen (gameValue ist bereits bock-verdoppelt aus calculateValue)
+           const playerEntries = [];
            players.forEach((player, index) => {
                const isSolo = index === soloPlayerIndex;
                const isDealer = index === currentDealer;
+               let entry = null;
 
                if (isDealer) {
                    rowHtml += '<td class="empty-entry">—</td>';
@@ -1456,16 +1514,25 @@
                        rowHtml += `<td class="minus-entry">-${gameValue}</td>`;
                        player.score -= gameValue;
                        player.losses++;
+                       entry = -gameValue;
                    }
                } else {
                    if (won) {
                        rowHtml += `<td class="minus-entry">-${gameValue}</td>`;
                        player.score -= gameValue;
                        player.losses++;
+                       entry = -gameValue;
                    } else {
                        rowHtml += '<td class="empty-entry">—</td>';
                    }
                }
+               playerEntries.push(entry);
+           });
+
+           gameHistory.unshift({
+               round: currentRound, dealerIndex: currentDealer,
+               soloPlayerIndex, gameName, typeKey, jacksText, stufeText,
+               gameValue, won, wasBockGame, playerEntries, rowBg: wasBockGame ? '#fff8f8' : ''
            });
 
            newRow.innerHTML = rowHtml;
@@ -1565,6 +1632,99 @@
                document.getElementById('schwarzErzielt').checked = true;
                document.getElementById('schneiderErzielt').checked = true;
            }
+           calculateValue();
+       }
+
+       function saveSpieldag() {
+           if (currentRound === 0) { alert('Noch keine Runden gespielt.'); return; }
+           const name = document.getElementById('spieltagName').value.trim()
+               || 'Spieltag ' + new Date().toLocaleDateString('de-DE');
+           const data = {
+               version: '1.4', savedAt: new Date().toISOString(), name,
+               players: players.map(p => ({ name: p.name, position: p.position, score: p.score, losses: p.losses })),
+               currentRound, currentDealer, bockGamesRemaining, bockTotalTriggered,
+               gameHistory
+           };
+           const json = JSON.stringify(data, null, 2);
+           const blob = new Blob([json], { type: 'application/json' });
+           const filename = name.replace(/[^a-zA-Z0-9äöüÄÖÜß ]/g, '_') + '.json';
+
+           if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: 'application/json' })] })) {
+               navigator.share({ files: [new File([blob], filename, { type: 'application/json' })] });
+           } else {
+               const a = document.createElement('a');
+               a.href = URL.createObjectURL(blob);
+               a.download = filename;
+               a.click();
+               URL.revokeObjectURL(a.href);
+           }
+       }
+
+       function loadFromFile(input) {
+           const file = input.files[0];
+           if (!file) return;
+           const reader = new FileReader();
+           reader.onload = e => {
+               try {
+                   const data = JSON.parse(e.target.result);
+                   restoreFromSave(data);
+               } catch {
+                   alert('Datei konnte nicht geladen werden.');
+               }
+           };
+           reader.readAsText(file);
+           input.value = '';
+       }
+
+       function restoreFromSave(data) {
+           players = data.players;
+           currentRound = data.currentRound;
+           currentDealer = data.currentDealer;
+           bockGamesRemaining = data.bockGamesRemaining;
+           bockTotalTriggered = data.bockTotalTriggered;
+           gameHistory = data.gameHistory;
+
+           // Setup ausblenden, Spiel einblenden
+           document.getElementById('setupSection').style.display = 'none';
+           document.getElementById('geberInfoBox').style.display = 'block';
+           document.getElementById('bockBanner').style.display = 'flex';
+           document.getElementById('playersGrid').style.display = 'grid';
+           document.getElementById('gameControls').style.display = 'block';
+           document.getElementById('historySection').style.display = 'block';
+
+           players.forEach((p, i) => { document.getElementById('th' + i).textContent = p.name; });
+
+           // Strichliste neu aufbauen
+           const tbody = document.getElementById('historyBody');
+           tbody.innerHTML = '';
+           [...gameHistory].reverse().forEach(g => {
+               const row = document.createElement('tr');
+               if (g.rowBg) row.style.background = g.rowBg;
+               const bockBadge = g.wasBockGame ? '<span class="badge-bock">BOCK</span>' : '';
+               const resultLabel = g.won ? '✅' : '❌';
+               let html = `
+                   <td>${g.round}${bockBadge}</td>
+                   <td>${players[g.dealerIndex].name}</td>
+                   <td>${players[g.soloPlayerIndex].name} ${resultLabel}</td>
+                   <td><span class="game-type-badge badge-${g.typeKey}">${g.gameName}</span></td>
+                   <td class="jacks-info">${g.jacksText}</td>
+                   <td>${g.stufeText}</td>
+                   <td>${g.gameValue}${g.wasBockGame ? ' 🔴' : ''}</td>
+               `;
+               g.playerEntries.forEach(entry => {
+                   html += entry !== null
+                       ? `<td class="minus-entry">${entry}</td>`
+                       : '<td class="empty-entry">—</td>';
+               });
+               row.innerHTML = html;
+               tbody.insertBefore(row, tbody.firstChild);
+           });
+
+           if (data.name) document.getElementById('spieltagName').value = data.name;
+           document.getElementById('roundNumber').textContent = currentRound + 1;
+           updateBockDisplay();
+           updateGeberSequence();
+           updatePlayersGrid();
            calculateValue();
        }
 
