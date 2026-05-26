@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Skat Tracker - Strichliste mit Geberrotation</title>
+   <style>
+       * {
+           margin: 0;
+           padding: 0;
+           box-sizing: border-box;
+       }
+
+       body {
+           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+           background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
+           min-height: 100vh;
+           color: #333;
+       }
+
+       .container {
+           max-width: 1200px;
+           margin: 0 auto;
+           padding: 20px;
+       }
+
+       header {
+           text-align: center;
+           color: white;
+           margin-bottom: 30px;
+       }
+
+       header h1 {
+           font-size: 2.5rem;
+           margin-bottom: 10px;
+           text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+       }
+
+       .rotation-badge {
+           display: inline-block;
+           background: #c8952a;
+           color: white;
+           padding: 5px 15px;
+           border-radius: 20px;
+           font-size: 0.9rem;
+           font-weight: bold;
+           margin-top: 10px;
+       }
+
+       .card-table {
+           background: #fffef5;
+           border-radius: 20px;
+           padding: 30px;
+           box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+           border: 2px solid #c8952a;
+       }
+
+       .setup-section {
+           background: #fffef0;
+           border: 2px solid #c8952a;
+           border-radius: 15px;
+           padding: 20px;
+           margin-bottom: 25px;
+       }
+
+       .setup-section h3 {
+           color: #1b4332;
+           margin-bottom: 15px;
+           font-size: 1.1rem;
+       }
+
+       .setup-grid {
+           display: grid;
+           grid-template-columns: repeat(4, 1fr);
+           gap: 15px;
+           margin-bottom: 15px;
+       }
+
+       .setup-player {
+           background: white;
+           padding: 15px;
+           border-radius: 10px;
+           border: 2px solid #ddd;
+           text-align: center;
+       }
+
+       .setup-player.active {
+           border-color: #c8952a;
+           background: #fffbea;
+       }
+
+       .setup-position {
+           font-size: 0.8rem;
+           color: #666;
+           font-weight: bold;
+           margin-bottom: 8px;
+       }
+
+       .setup-player input {
+           width: 100%;
+           padding: 8px;
+           border: 1px solid #ddd;
+           border-radius: 5px;
+           text-align: center;
+           font-size: 1rem;
+           font-weight: bold;
+       }
+
+       .setup-player select {
+           width: 100%;
+           padding: 8px;
+           border: 1px solid #ddd;
+           border-radius: 5px;
+           font-size: 0.9rem;
+           margin-top: 5px;
+       }
+
+       .btn-setup {
+           background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
+           color: #f0d080;
+           border: none;
+           padding: 10px 20px;
+           border-radius: 8px;
+           cursor: pointer;
+           font-weight: bold;
+           width: 100%;
+           border: 1px solid #c8952a;
+       }
+
+       .btn-setup:hover {
+           background: linear-gradient(135deg, #14311f 0%, #235a3f 100%);
+       }
+
+       .players-grid {
+           display: grid;
+           grid-template-columns: repeat(4, 1fr);
+           gap: 20px;
+           margin-bottom: 30px;
+       }
+
+       .player-card {
+           background: linear-gradient(145deg, #fffef5, #f8f0d8);
+           border-radius: 15px;
+           padding: 20px;
+           padding-top: 28px;
+           text-align: center;
+           border: 3px solid #d4b060;
+           transition: all 0.3s ease;
+           position: relative;
+       }
+
+       .player-card.active {
+           border-color: #c8952a;
+           background: linear-gradient(145deg, #fffbea, #f5e8b0);
+       }
+
+       .player-card.dealer {
+           border-color: #43a047;
+           background: linear-gradient(145deg, #f0faf0, #c8e6c9);
+           transform: scale(1.05);
+           box-shadow: 0 5px 20px rgba(67, 160, 71, 0.3);
+       }
+
+       .player-card.sitting-out {
+           opacity: 0.6;
+           background: linear-gradient(145deg, #e0e0e0, #bdbdbd);
+       }
+
+       .player-card.has-loss {
+           border-color: #f44336;
+           background: linear-gradient(145deg, #ffebee, #ffcdd2);
+       }
+
+       .player-card::before {
+           content: attr(data-position);
+           position: absolute;
+           top: 5px;
+           right: 10px;
+           font-size: 0.8rem;
+           color: #666;
+           font-weight: bold;
+       }
+
+       .player-avatar {
+           width: 60px;
+           height: 60px;
+           background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
+           border-radius: 50%;
+           margin: 0 auto 10px;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           color: #f0d080;
+           font-size: 1.5rem;
+           font-weight: bold;
+           border: 2px solid #c8952a;
+       }
+
+       .player-card.sitting-out .player-avatar {
+           background: linear-gradient(135deg, #9e9e9e 0%, #616161 100%);
+       }
+
+       .player-name {
+           font-weight: bold;
+           margin-bottom: 5px;
+           color: #333;
+       }
+
+       .player-score {
+           font-size: 1.8rem;
+           font-weight: bold;
+           color: #2c3e50;
+       }
+
+       .loss-indicator {
+           font-size: 0.8rem;
+           color: #f44336;
+           margin-top: 5px;
+           font-weight: bold;
+       }
+
+       .dealer-badge {
+           position: absolute;
+           top: -10px;
+           left: 50%;
+           transform: translateX(-50%);
+           background: #43a047;
+           color: white;
+           padding: 3px 12px;
+           border-radius: 12px;
+           font-size: 0.75rem;
+           font-weight: bold;
+           z-index: 10;
+       }
+
+       .sitting-out-badge {
+           position: absolute;
+           top: -10px;
+           left: 50%;
+           transform: translateX(-50%);
+           background: #757575;
+           color: white;
+           padding: 3px 12px;
+           border-radius: 12px;
+           font-size: 0.75rem;
+           font-weight: bold;
+       }
+
+       .controls {
+           background: #f0faf0;
+           border-radius: 15px;
+           padding: 25px;
+           margin-bottom: 20px;
+           border: 1px solid #66bb6a;
+       }
+
+       .controls h3 {
+           margin-bottom: 20px;
+           color: #1b4332;
+           font-size: 1.2rem;
+       }
+
+       .geber-info-box {
+           background: #f0faf0;
+           border: 2px solid #66bb6a;
+           border-radius: 10px;
+           padding: 15px;
+           margin-bottom: 20px;
+           text-align: center;
+       }
+
+       .geber-info-box h4 {
+           color: #2e7d32;
+           margin-bottom: 10px;
+       }
+
+       .geber-sequence {
+           display: flex;
+           justify-content: center;
+           align-items: center;
+           gap: 10px;
+           margin-top: 10px;
+           flex-wrap: wrap;
+       }
+
+       .geber-item {
+           padding: 8px 12px;
+           border-radius: 20px;
+           font-size: 0.9rem;
+           font-weight: 600;
+       }
+
+       .geber-item.current {
+           background: #43a047;
+           color: white;
+           transform: scale(1.1);
+       }
+
+       .geber-item.next {
+           background: #e0e0e0;
+           color: #666;
+       }
+
+       .geber-arrow {
+           color: #66bb6a;
+           font-size: 1.2rem;
+       }
+
+       .form-row {
+           display: grid;
+           grid-template-columns: 1.5fr 1fr 1.5fr 2fr 1fr 1fr;
+           gap: 12px;
+           margin-bottom: 15px;
+           align-items: end;
+       }
+
+       .form-group {
+           display: flex;
+           flex-direction: column;
+       }
+
+       .form-group label {
+           font-size: 0.85rem;
+           color: #666;
+           margin-bottom: 5px;
+           font-weight: 600;
+       }
+
+       .form-group input, .form-group select {
+           padding: 12px;
+           border: 2px solid #ddd;
+           border-radius: 8px;
+           font-size: 1rem;
+           transition: border-color 0.3s;
+           background: white;
+       }
+
+       .form-group input:focus, .form-group select:focus {
+           outline: none;
+           border-color: #667eea;
+       }
+
+       .btn {
+           padding: 12px 20px;
+           border: none;
+           border-radius: 8px;
+           font-size: 1rem;
+           font-weight: 600;
+           cursor: pointer;
+           transition: all 0.3s;
+       }
+
+       .btn-primary {
+           background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
+           color: #f0d080;
+           border: 1px solid #c8952a;
+       }
+
+       .btn-primary:hover {
+           transform: translateY(-2px);
+           box-shadow: 0 5px 15px rgba(200, 149, 42, 0.4);
+       }
+
+       .checkbox-group {
+           display: flex;
+           gap: 15px;
+           align-items: center;
+           padding: 8px 0;
+       }
+
+       .checkbox-item {
+           display: flex;
+           align-items: center;
+           gap: 5px;
+       }
+
+       .checkbox-item input[type="checkbox"] {
+           width: 18px;
+           height: 18px;
+           cursor: pointer;
+       }
+
+       .checkbox-item label {
+           margin: 0;
+           cursor: pointer;
+           font-size: 0.9rem;
+       }
+
+       .stufen-group {
+           display: flex;
+           flex-wrap: wrap;
+           gap: 6px;
+           padding: 4px 0;
+       }
+
+       .stufen-btn {
+           display: flex;
+           align-items: center;
+           gap: 5px;
+           padding: 7px 11px;
+           border: 2px solid #ddd;
+           border-radius: 8px;
+           cursor: pointer;
+           font-size: 0.85rem;
+           font-weight: 600;
+           background: white;
+           transition: all 0.2s;
+           user-select: none;
+           white-space: nowrap;
+       }
+
+       .stufen-btn:has(input:checked) {
+           border-color: #1b4332;
+           background: #e8f5e9;
+           color: #1b4332;
+       }
+
+       .stufen-btn input[type="checkbox"] {
+           width: 16px;
+           height: 16px;
+           cursor: pointer;
+           accent-color: #1b4332;
+       }
+
+       .stufen-sep {
+           width: 1px;
+           background: #ddd;
+           align-self: stretch;
+           margin: 2px 2px;
+       }
+
+       .calculation-box {
+           background: #e3f2fd;
+           border-left: 4px solid #2196F3;
+           padding: 15px;
+           margin-top: 15px;
+           border-radius: 0 8px 8px 0;
+           font-size: 0.9rem;
+           color: #1565C0;
+       }
+
+       .calculation-box strong {
+           display: block;
+           margin-bottom: 5px;
+           font-size: 1.1rem;
+       }
+
+       .entry-preview {
+           background: #fff3e0;
+           border-left: 4px solid #FF9800;
+           padding: 15px;
+           margin-top: 10px;
+           border-radius: 0 8px 8px 0;
+           font-size: 0.9rem;
+           color: #e65100;
+       }
+
+       .entry-preview strong {
+           display: block;
+           margin-bottom: 10px;
+       }
+
+       .entry-grid {
+           display: grid;
+           grid-template-columns: repeat(4, 1fr);
+           gap: 10px;
+           margin-top: 10px;
+       }
+
+       .entry-player {
+           background: white;
+           padding: 10px;
+           border-radius: 6px;
+           text-align: center;
+           border: 2px solid #ddd;
+       }
+
+       .entry-player.winner {
+           border-color: #4CAF50;
+           background: #e8f5e9;
+       }
+
+       .entry-player.loser {
+           border-color: #f44336;
+           background: #ffebee;
+       }
+
+       .entry-player.sitting-out {
+           border-color: #9e9e9e;
+           background: #f5f5f5;
+           opacity: 0.7;
+       }
+
+       .entry-name {
+           font-weight: bold;
+           font-size: 0.9rem;
+           margin-bottom: 5px;
+       }
+
+       .entry-value {
+           font-size: 1.3rem;
+           font-weight: bold;
+       }
+
+       .entry-value.minus {
+           color: #f44336;
+       }
+
+       .entry-value.plus {
+           color: #4CAF50;
+       }
+
+       .entry-value.neutral {
+           color: #9e9e9e;
+       }
+
+       .history-section {
+           background: #f0faf0;
+           border-radius: 15px;
+           padding: 25px;
+           border: 1px solid #66bb6a;
+       }
+
+       .history-section h3 {
+           margin-bottom: 20px;
+           color: #1b4332;
+       }
+
+       table {
+           width: 100%;
+           border-collapse: collapse;
+           background: white;
+           border-radius: 10px;
+           overflow: hidden;
+       }
+
+       th, td {
+           padding: 12px;
+           text-align: center;
+           border-bottom: 1px solid #eee;
+       }
+
+       th {
+           background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
+           color: #f0d080;
+           font-weight: 600;
+           border-bottom: 2px solid #c8952a;
+       }
+
+       tr:hover {
+           background: #f5f5f5;
+       }
+
+       .minus-entry {
+           color: #f44336;
+           font-weight: bold;
+           font-size: 1.1rem;
+       }
+
+       .empty-entry {
+           color: #ccc;
+           font-style: italic;
+       }
+
+       .game-type-badge {
+           display: inline-block;
+           padding: 4px 10px;
+           border-radius: 12px;
+           font-size: 0.75rem;
+           font-weight: bold;
+       }
+
+       .badge-farb {
+           background: #e3f2fd;
+           color: #1976d2;
+       }
+
+       .badge-grand {
+           background: #fff3e0;
+           color: #f57c00;
+       }
+
+       .badge-null {
+           background: #f3e5f5;
+           color: #7b1fa2;
+       }
+
+       .jacks-info {
+           font-size: 0.8rem;
+           color: #666;
+           margin-top: 3px;
+       }
+
+       .legend {
+           display: flex;
+           gap: 20px;
+           margin-top: 15px;
+           font-size: 0.85rem;
+           color: #666;
+           justify-content: center;
+           flex-wrap: wrap;
+       }
+
+       .legend-item {
+           display: flex;
+           align-items: center;
+           gap: 5px;
+       }
+
+       .legend-color {
+           width: 12px;
+           height: 12px;
+           border-radius: 2px;
+       }
+
+       /* ===== BOCKRUNDE ===== */
+       .bock-banner {
+           background: linear-gradient(135deg, #b71c1c 0%, #e53935 100%);
+           border-radius: 12px;
+           padding: 15px 20px;
+           margin-bottom: 20px;
+           color: white;
+           display: flex;
+           align-items: center;
+           justify-content: space-between;
+           flex-wrap: wrap;
+           gap: 10px;
+           box-shadow: 0 4px 15px rgba(183,28,28,0.4);
+           animation: bockPulse 2s infinite;
+       }
+
+       @keyframes bockPulse {
+           0%, 100% { box-shadow: 0 4px 15px rgba(183,28,28,0.4); }
+           50%       { box-shadow: 0 4px 25px rgba(183,28,28,0.8); }
+       }
+
+       .bock-banner.inactive {
+           background: #e8f5e9;
+           border: 2px dashed #66bb6a;
+           color: #2e7d32;
+           box-shadow: none;
+           animation: none;
+       }
+
+       .bock-title {
+           font-size: 1.2rem;
+           font-weight: bold;
+           letter-spacing: 1px;
+       }
+
+       .bock-counter-group {
+           display: flex;
+           gap: 20px;
+           align-items: center;
+           flex-wrap: wrap;
+       }
+
+       .bock-counter {
+           text-align: center;
+       }
+
+       .bock-counter .bock-num {
+           font-size: 2rem;
+           font-weight: bold;
+           line-height: 1;
+       }
+
+       .bock-counter .bock-label {
+           font-size: 0.75rem;
+           opacity: 0.85;
+       }
+
+       .bock-btn-group {
+           display: flex;
+           gap: 8px;
+           flex-wrap: wrap;
+       }
+
+       .btn-bock-trigger {
+           background: white;
+           color: #b71c1c;
+           border: none;
+           padding: 8px 14px;
+           border-radius: 8px;
+           font-weight: bold;
+           cursor: pointer;
+           font-size: 0.85rem;
+       }
+
+       .btn-bock-trigger:hover { background: #ffebee; }
+
+       .bock-banner.inactive .btn-bock-trigger {
+           background: #43a047;
+           color: white;
+       }
+
+       .bock-banner.inactive .btn-bock-trigger:hover { background: #2e7d32; }
+
+       .btn-bock-minus {
+           background: rgba(0,0,0,0.25);
+           color: white;
+           border: 1px solid rgba(255,255,255,0.4);
+           padding: 8px 14px;
+           border-radius: 8px;
+           font-weight: bold;
+           font-size: 1rem;
+           cursor: pointer;
+       }
+
+       .btn-bock-minus:hover { background: rgba(0,0,0,0.4); }
+
+       .bock-banner.inactive .btn-bock-minus {
+           background: #ffebee;
+           color: #b71c1c;
+           border-color: #ef9a9a;
+       }
+
+       .bock-banner.inactive .btn-bock-minus:hover { background: #ffcdd2; }
+
+       .btn-bock-rules {
+           background: rgba(255,255,255,0.2);
+           color: white;
+           border: 1px solid rgba(255,255,255,0.5);
+           padding: 8px 14px;
+           border-radius: 8px;
+           font-size: 0.85rem;
+           cursor: pointer;
+       }
+
+       .bock-banner.inactive .btn-bock-rules {
+           background: transparent;
+           color: #2e7d32;
+           border-color: #66bb6a;
+       }
+
+       .bock-rules-box {
+           background: #fff8e1;
+           border: 2px solid #ffd54f;
+           border-radius: 12px;
+           padding: 20px;
+           margin-bottom: 20px;
+           display: none;
+       }
+
+       .bock-rules-box h4 {
+           color: #e65100;
+           margin-bottom: 12px;
+           font-size: 1.1rem;
+       }
+
+       .bock-rules-box ul {
+           padding-left: 20px;
+           color: #5d4037;
+           line-height: 1.8;
+       }
+
+       .bock-rules-box .rules-section {
+           margin-bottom: 12px;
+       }
+
+       .bock-rules-box .rules-section strong {
+           color: #bf360c;
+           display: block;
+           margin-bottom: 4px;
+       }
+
+       .badge-bock {
+           background: #b71c1c;
+           color: white;
+           padding: 2px 7px;
+           border-radius: 8px;
+           font-size: 0.7rem;
+           font-weight: bold;
+           margin-left: 4px;
+           vertical-align: middle;
+       }
+
+       .calculation-box.bock-active {
+           background: #ffebee;
+           border-left-color: #b71c1c;
+           color: #b71c1c;
+       }
+
+       /* ===== MOBILE / iPHONE ===== */
+       @media (max-width: 768px) {
+
+           /* Grundlayout */
+           .container { padding: 10px; }
+
+           .card-table { padding: 14px; border-radius: 14px; }
+
+           header h1 { font-size: 1.6rem; }
+           header p  { font-size: 0.85rem; }
+
+           /* Inputs: 16px verhindert Auto-Zoom auf iOS */
+           input, select, textarea {
+               font-size: 16px !important;
+           }
+
+           /* Buttons: Touch-Target min 44px */
+           .btn, .btn-setup, .btn-bock-trigger,
+           .btn-bock-minus, .btn-bock-rules {
+               min-height: 44px;
+               font-size: 0.95rem;
+           }
+
+           /* ── Geber-Box ── */
+           .geber-info-box { padding: 12px; }
+           .geber-sequence { font-size: 0.8rem; gap: 6px; }
+           .geber-item     { padding: 6px 9px; }
+
+           /* ── Bock-Banner ── */
+           .bock-banner {
+               flex-direction: column;
+               align-items: flex-start;
+               gap: 12px;
+               padding: 14px;
+           }
+
+           .bock-title { font-size: 1rem; }
+
+           .bock-counter-group {
+               width: 100%;
+               justify-content: space-between;
+           }
+
+           .bock-counter .bock-num   { font-size: 1.6rem; }
+           .bock-counter .bock-label { font-size: 0.7rem; }
+
+           .bock-btn-group {
+               width: 100%;
+               display: grid;
+               grid-template-columns: 1fr 1fr 1fr auto;
+               gap: 6px;
+           }
+
+           /* ── Spieler-Kacheln ── */
+           .players-grid, .setup-grid {
+               grid-template-columns: repeat(2, 1fr);
+               gap: 10px;
+           }
+
+           .player-card { padding: 14px; padding-top: 24px; }
+
+           .player-avatar {
+               width: 46px;
+               height: 46px;
+               font-size: 1.2rem;
+           }
+
+           .player-score { font-size: 1.4rem; }
+
+           /* ── Setup ── */
+           .setup-section { padding: 14px; }
+
+           /* ── Spiel eintragen ── */
+           .controls { padding: 16px; }
+
+           .form-row {
+               grid-template-columns: 1fr 1fr;
+               gap: 10px;
+           }
+
+           /* Alleinspieler & Spiel: volle Breite */
+           .form-row .form-group:nth-child(1),
+           .form-row .form-group:nth-child(2) {
+               grid-column: span 1;
+           }
+
+           /* Buben: volle Breite */
+           .form-row .form-group:nth-child(3) {
+               grid-column: span 2;
+           }
+
+           /* Stufen (Hand + Schneider + Schwarz zusammen): volle Breite */
+           .form-row .form-group:nth-child(4) {
+               grid-column: span 2;
+           }
+
+           /* Ergebnis & Button: je halbe Breite */
+           .form-row .form-group:nth-child(5),
+           .form-row .form-group:nth-child(6) {
+               grid-column: span 1;
+           }
+
+           /* Vorschau-Kacheln */
+           .entry-grid {
+               grid-template-columns: repeat(2, 1fr);
+               gap: 8px;
+           }
+
+           /* ── Strichliste: horizontales Scrollen ── */
+           .history-section { padding: 14px; overflow-x: auto; }
+
+           #historyTable {
+               font-size: 0.78rem;
+               min-width: 560px;
+           }
+
+           th, td { padding: 8px 6px; }
+
+           /* Legende */
+           .legend { font-size: 0.75rem; gap: 10px; }
+
+           /* Berechnung & Vorschau */
+           .calculation-box { font-size: 0.85rem; }
+           .entry-preview    { font-size: 0.85rem; }
+       }
+
+       /* Sehr kleine Bildschirme (iPhone SE etc.) */
+       @media (max-width: 390px) {
+           header h1 { font-size: 1.3rem; }
+
+           .bock-btn-group {
+               grid-template-columns: 1fr 1fr;
+           }
+
+           .form-row {
+               grid-template-columns: 1fr;
+           }
+
+           .form-row .form-group:nth-child(n) {
+               grid-column: span 1;
+           }
+
+           .players-grid { grid-template-columns: repeat(2, 1fr); }
+       }
+   </style>
+</head>
+<body>
+   <div class="container">
+       <header>
+           <h1>♠ Skat Strichliste ♣</h1>
+           <p>Mit automatischer Geberrotation</p>
+           <span class="rotation-badge">GEBER ROTIERT</span>
+       </header>
+
+       <div class="card-table">
+           <!-- Setup Section für Sitzordnung -->
+           <div class="setup-section" id="setupSection">
+               <h3>⚙️ Sitzordnung einrichten (Reihenfolge am Tisch)</h3>
+               <div class="setup-grid">
+                   <div class="setup-player active">
+                       <div class="setup-position">Spieler 1</div>
+                       <input type="text" id="name0" value="Hartmut" maxlength="10">
+                   </div>
+                   <div class="setup-player">
+                       <div class="setup-position">Spieler 2</div>
+                       <input type="text" id="name1" value="Thomas" maxlength="10">
+                   </div>
+                   <div class="setup-player">
+                       <div class="setup-position">Spieler 3</div>
+                       <input type="text" id="name2" value="Klaus" maxlength="10">
+                   </div>
+                   <div class="setup-player">
+                       <div class="setup-position">Spieler 4</div>
+                       <input type="text" id="name3" value="Wilfried" maxlength="10">
+                       <select id="initialDealer">
+                           <option value="0">Hartmut gibt zuerst</option>
+                           <option value="1">Thomas gibt zuerst</option>
+                           <option value="2">Klaus gibt zuerst</option>
+                           <option value="3" selected>Wilfried gibt zuerst</option>
+                       </select>
+                   </div>
+               </div>
+               <button class="btn-setup" onclick="setupPlayers()">Sitzordnung speichern & Spiel starten</button>
+           </div>
+
+           <div class="geber-info-box" id="geberInfoBox" style="display: none;">
+               <h4>🔄 Geberrotation (nach jedem Spiel)</h4>
+               <div>Reihenfolge: Spieler 1 → Spieler 2 → Spieler 3 → Spieler 4 → Spieler 1...</div>
+               <div class="geber-sequence" id="geberSequence"></div>
+           </div>
+
+           <!-- Bockrunden-Banner -->
+           <div class="bock-banner inactive" id="bockBanner" style="display: none;">
+               <div class="bock-title" id="bockTitle">🃏 Keine Bockrunde aktiv</div>
+               <div class="bock-counter-group">
+                   <div class="bock-counter">
+                       <div class="bock-num" id="bockRemaining">0</div>
+                       <div class="bock-label">Bock-Spiele noch</div>
+                   </div>
+                   <div class="bock-counter">
+                       <div class="bock-num" id="bockRounds">0</div>
+                       <div class="bock-label">Bockrunden noch</div>
+                   </div>
+                   <div class="bock-counter">
+                       <div class="bock-num" id="bockTotal">0</div>
+                       <div class="bock-label">Bockrunden gesamt</div>
+                   </div>
+               </div>
+               <div class="bock-btn-group">
+                   <button class="btn-bock-minus" onclick="removeBock()" title="Bockrunde zurücknehmen">−1</button>
+                   <button class="btn-bock-trigger" onclick="triggerBock(1)">+1 Bockrunde</button>
+                   <button class="btn-bock-trigger" onclick="triggerBock(2)">+2 Bockrunden</button>
+                   <button class="btn-bock-rules" onclick="toggleBockRules()">📖 Regeln</button>
+               </div>
+               <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+                   <span style="font-size:0.85rem; opacity:0.9;">Bock-Spiele direkt setzen:</span>
+                   <input type="number" id="bockSetInput" min="0" placeholder="0"
+                       style="width:58px; padding:6px 8px; border-radius:8px; border:none; font-size:1rem; text-align:center; font-weight:bold;">
+                   <button class="btn-bock-trigger" onclick="setBockGames()" style="padding:6px 14px;">Setzen</button>
+               </div>
+           </div>
+
+           <!-- Bock-Regelbox -->
+           <div class="bock-rules-box" id="bockRulesBox">
+               <h4>📖 Bockrunden-Regeln</h4>
+               <div class="rules-section">
+                   <strong>Was ist eine Bockrunde?</strong>
+                   <ul>
+                       <li>Eine Bockrunde umfasst <strong>4 Spiele</strong> (jeder Spieler gibt einmal)</li>
+                       <li>In dieser Zeit zählen <strong>alle Spielwerte doppelt</strong> — Gewinne wie Verluste</li>
+                   </ul>
+               </div>
+               <div class="rules-section">
+                   <strong>Wann wird eine Bockrunde ausgelöst?</strong>
+                   <ul>
+                       <li>Der Alleinspieler <strong>verliert</strong> ein Spiel → automatisch neue Bockrunde</li>
+                       <li>Manuell über den Button „+ Bockrunde auslösen"</li>
+                   </ul>
+               </div>
+               <div class="rules-section">
+                   <strong>Stapeln (Stacking)</strong>
+                   <ul>
+                       <li>Wird während einer Bockrunde ein weiterer Auslöser getroffen, kommt eine <strong>neue Bockrunde in die Warteschlange</strong></li>
+                       <li>Nach Ende der laufenden Bockrunde startet automatisch die nächste</li>
+                   </ul>
+               </div>
+               <div class="rules-section">
+                   <strong>Beispiel bei 60 Punkten Spielwert:</strong>
+                   <ul>
+                       <li>Normal — Alleinspieler gewinnt: jeder Verlierer zahlt <strong>−60</strong></li>
+                       <li>Normal — Alleinspieler verliert: Alleinspieler zahlt <strong>−60</strong></li>
+                       <li>Bock — Alleinspieler gewinnt: jeder Verlierer zahlt <strong>−120</strong></li>
+                       <li>Bock — Alleinspieler verliert: Alleinspieler zahlt <strong>−120</strong></li>
+                   </ul>
+               </div>
+           </div>
+
+           <div class="players-grid" id="playersGrid" style="display: none;">
+               <!-- Wird dynamisch gefüllt -->
+           </div>
+
+           <div class="controls" id="gameControls" style="display: none;">
+               <h3>🎮 Neues Spiel eintragen (Runde <span id="roundNumber">1</span>)</h3>
+
+               <div class="form-row">
+                   <div class="form-group">
+                       <label>Alleinspieler</label>
+                       <select id="player" onchange="updatePreview()">
+                           <!-- Wird dynamisch gefüllt -->
+                       </select>
+                   </div>
+                   <div class="form-group">
+                       <label>Spiel</label>
+                       <select id="gameType" onchange="calculateValue()">
+                           <option value="12">Kreuz (Grundwert 12)</option>
+                           <option value="11">Pik (Grundwert 11)</option>
+                           <option value="10">Herz (Grundwert 10)</option>
+                           <option value="9">Karo (Grundwert 9)</option>
+                           <option value="24">Grand (Grundwert 24)</option>
+                           <option value="23">Null (23)</option>
+                           <option value="35">Null Hand (35)</option>
+                           <option value="46">Null Ouvert (46)</option>
+                           <option value="59">Null Ouvert Hand (59)</option>
+                       </select>
+                   </div>
+                   <div class="form-group">
+                       <label>Buben (Mit/Ohne)</label>
+                       <select id="jacks" onchange="calculateValue()">
+                           <option value="1">Mit 1 (Kreuzbube)</option>
+                           <option value="2">Mit 2</option>
+                           <option value="3">Mit 3</option>
+                           <option value="4">Mit 4</option>
+                           <option value="1">Ohne 1</option>
+                           <option value="2">Ohne 2</option>
+                           <option value="3">Ohne 3</option>
+                           <option value="4" selected>Ohne 4</option>
+                       </select>
+                   </div>
+                   <div class="form-group">
+                       <label>Stufen</label>
+                       <div class="stufen-group">
+                           <label class="stufen-btn">
+                               <input type="checkbox" id="hand" onchange="calculateValue()">
+                               Hand
+                           </label>
+                           <div class="stufen-sep"></div>
+                           <label class="stufen-btn">
+                               <input type="checkbox" id="schneiderErzielt" onchange="onSchneiderErzielt()">
+                               Schn. erz.
+                           </label>
+                           <label class="stufen-btn">
+                               <input type="checkbox" id="schneider" onchange="onSchneiderAng()">
+                               Schn. ang.
+                           </label>
+                           <div class="stufen-sep"></div>
+                           <label class="stufen-btn">
+                               <input type="checkbox" id="schwarzErzielt" onchange="onSchwarzErzielt()">
+                               Schw. erz.
+                           </label>
+                           <label class="stufen-btn">
+                               <input type="checkbox" id="schwarz" onchange="onSchwarzAng()">
+                               Schw. ang.
+                           </label>
+                       </div>
+                   </div>
+                   <div class="form-group">
+                       <label>Ergebnis</label>
+                       <select id="result" onchange="updatePreview()" style="font-weight: bold;">
+                           <option value="won">✅ Gewonnen</option>
+                           <option value="lost">❌ Verloren</option>
+                       </select>
+                   </div>
+                   <div class="form-group">
+                       <label>&nbsp;</label>
+                       <button class="btn btn-primary" onclick="addGame()">Eintragen & Weiter</button>
+                   </div>
+               </div>
+
+               <div class="calculation-box">
+                   <strong>Berechneter Spielwert: <span id="calculatedValue" style="font-size: 1.3rem;">36</span> Punkte</strong>
+                   <span id="calculationDetails">Grundwert: 12 (Kreuz) × 3 Fälle (Ohne 3 Buben: +1, Spiel: +1, Hand: +1) = 36</span>
+               </div>
+
+               <div class="entry-preview">
+                   <strong>📝 Vorschau: Wer bekommt einen Strich (Minuszahl) auf den Zettel?</strong>
+                   <div class="entry-grid" id="entryPreview"></div>
+               </div>
+           </div>
+
+           <div class="history-section" id="historySection" style="display: none;">
+               <h3>📊 Strichliste (Nur eingetragene Minuszahlen)</h3>
+               <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+               <table id="historyTable">
+                   <thead>
+                       <tr>
+                           <th>Runde</th>
+                           <th>Geber</th>
+                           <th>Allein-<br>spieler</th>
+                           <th>Spiel</th>
+                           <th>Buben</th>
+                           <th>Stufe</th>
+                           <th>Wert</th>
+                           <th id="th0"></th>
+                           <th id="th1"></th>
+                           <th id="th2"></th>
+                           <th id="th3"></th>
+                       </tr>
+                   </thead>
+                   <tbody id="historyBody">
+                   </tbody>
+               </table>
+               </div>
+
+               <div class="legend">
+                   <div class="legend-item">
+                       <div class="legend-color" style="background: #f44336;"></div>
+                       <span>Minuszahl eingetragen (Verlust)</span>
+                   </div>
+                   <div class="legend-item">
+                       <div class="legend-color" style="background: #ccc;"></div>
+                       <span>Kein Eintrag (Gewinner/Geber)</span>
+                   </div>
+                   <div class="legend-item">
+                       <div class="legend-color" style="background: #43a047;"></div>
+                       <span>Geber rotiert nach jedem Spiel</span>
+                   </div>
+               </div>
+           </div>
+       </div>
+   </div>
+
+   <script>
+       let players = [];
+       let currentRound = 0;
+       let currentDealer = 3;
+       let bockGamesRemaining = 0;  // verbleibende Bock-Spiele gesamt (à 4 pro Runde)
+       let bockTotalTriggered = 0; // Gesamtzahl ausgelöster Bockrunden
+
+       function setupPlayers() {
+           // Namen einlesen
+           const names = [
+               document.getElementById('name0').value.trim() || 'Hartmut',
+               document.getElementById('name1').value.trim() || 'Thomas',
+               document.getElementById('name2').value.trim() || 'Klaus',
+               document.getElementById('name3').value.trim() || 'Wilfried'
+           ];
+
+           // Initialen Geber setzen
+           currentDealer = parseInt(document.getElementById('initialDealer').value);
+
+           // Spieler-Array erstellen
+           players = [
+               { name: names[0], position: 'Spieler 1', score: 0, losses: 0 },
+               { name: names[1], position: 'Spieler 2', score: 0, losses: 0 },
+               { name: names[2], position: 'Spieler 3', score: 0, losses: 0 },
+               { name: names[3], position: 'Spieler 4', score: 0, losses: 0 }
+           ];
+
+           // Setup ausblenden, Spiel einblenden
+           document.getElementById('setupSection').style.display = 'none';
+           document.getElementById('geberInfoBox').style.display = 'block';
+           document.getElementById('bockBanner').style.display = 'flex';
+           document.getElementById('playersGrid').style.display = 'grid';
+           document.getElementById('gameControls').style.display = 'block';
+           document.getElementById('historySection').style.display = 'block';
+
+           // Tabellen-Header aktualisieren
+           players.forEach((p, i) => {
+               document.getElementById('th' + i).textContent = p.name;
+           });
+
+           updatePlayersGrid();
+           updateGeberSequence();
+           calculateValue();
+       }
+
+       function calculateValue() {
+           const gameType = document.getElementById('gameType');
+           const jacks = document.getElementById('jacks');
+           const hand = document.getElementById('hand').checked;
+           const schneiderErzielt = document.getElementById('schneiderErzielt').checked;
+           const schneider = document.getElementById('schneider').checked;
+           const schwarzErzielt = document.getElementById('schwarzErzielt').checked;
+           const schwarz = document.getElementById('schwarz').checked;
+
+           const baseValue = parseInt(gameType.value);
+           const gameOption = gameType.options[gameType.selectedIndex].text;
+           const gameName = gameOption.split(' ')[0];
+           const isNull = gameOption.toLowerCase().startsWith('null');
+
+           // Buben-Felder und Stufen-Gruppe bei Null-Spielen ausblenden
+           const jacksGroup = jacks.closest('.form-group');
+           const stufenGroup = document.getElementById('hand').closest('.form-group');
+           jacksGroup.style.visibility = isNull ? 'hidden' : 'visible';
+           stufenGroup.style.visibility = isNull ? 'hidden' : 'visible';
+
+           let gameValue, detailText;
+
+           if (isNull) {
+               gameValue = baseValue;
+               detailText = `Null-Spiel: Festwert ${gameValue} Punkte (keine Buben-Multiplikation)`;
+           } else {
+               const jacksValue = parseInt(jacks.value);
+               const jacksText = jacks.options[jacks.selectedIndex].text;
+               let multiplier = jacksValue + 1;
+               let levelText = [jacksText];
+               if (hand) { multiplier += 1; levelText.push('Hand'); }
+               if (schneiderErzielt) { multiplier += 1; levelText.push('Schneider'); }
+               if (schneider) { multiplier += 1; levelText.push('Schneider ang.'); }
+               if (schwarzErzielt) { multiplier += 1; levelText.push('Schwarz'); }
+               if (schwarz) { multiplier += 1; levelText.push('Schwarz ang.'); }
+               gameValue = baseValue * multiplier;
+               detailText = `Grundwert: ${baseValue} (${gameName}) × ${multiplier} Fälle (${levelText.join(', ')}) = ${gameValue}`;
+           }
+
+           const isBock = bockGamesRemaining > 0;
+           const finalValue = isBock ? gameValue * 2 : gameValue;
+           const bockNote = isBock ? ` × 2 (BOCK) = ${finalValue}` : '';
+
+           document.getElementById('calculatedValue').textContent = finalValue;
+           document.getElementById('calculationDetails').textContent = detailText + bockNote;
+
+           const calcBox = document.querySelector('.calculation-box');
+           if (isBock) calcBox.classList.add('bock-active');
+           else calcBox.classList.remove('bock-active');
+
+           updatePreview();
+       }
+
+       function updatePreview() {
+           const soloPlayerIndex = parseInt(document.getElementById('player').value);
+           const gameValue = parseInt(document.getElementById('calculatedValue').textContent);
+           const won = document.getElementById('result').value === 'won';
+
+           const previewDiv = document.getElementById('entryPreview');
+           let html = '';
+
+           players.forEach((player, index) => {
+               const isSolo = index === soloPlayerIndex;
+               const isDealer = index === currentDealer;
+
+               let cssClass = '';
+               let value = '';
+               let text = '';
+               let valueClass = 'neutral';
+
+               if (isDealer) {
+                   cssClass = 'sitting-out';
+                   value = '—';
+                   text = 'Geber (sitzt aus)';
+               } else if (isSolo) {
+                   if (won) {
+                       cssClass = 'winner';
+                       value = '—';
+                       text = 'Gewinnt';
+                   } else {
+                       cssClass = 'loser';
+                       value = `-${gameValue}`;
+                       text = 'Verliert';
+                       valueClass = 'minus';
+                   }
+               } else {
+                   if (won) {
+                       cssClass = 'loser';
+                       value = `-${gameValue}`;
+                       text = 'Verliert';
+                       valueClass = 'minus';
+                   } else {
+                       cssClass = 'winner';
+                       value = '—';
+                       text = 'Gewinnt';
+                   }
+               }
+
+               html += `
+                   <div class="entry-player ${cssClass}">
+                       <div class="entry-name">${player.name}</div>
+                       <div class="entry-value ${valueClass}">${value}</div>
+                       <div style="font-size: 0.7rem; color: #666;">${text}</div>
+                   </div>
+               `;
+           });
+
+           previewDiv.innerHTML = html;
+       }
+
+       function updateGeberSequence() {
+           const sequenceDiv = document.getElementById('geberSequence');
+
+           let html = '';
+           for (let i = 0; i < 6; i++) {
+               const posIndex = (currentDealer + i) % 4;
+               const isCurrent = i === 0;
+
+               if (i > 0) {
+                   html += '<span class="geber-arrow">→</span>';
+               }
+
+               const cssClass = isCurrent ? 'current' : 'next';
+               html += `<span class="geber-item ${cssClass}">${players[posIndex].name}</span>`;
+           }
+
+           sequenceDiv.innerHTML = html;
+       }
+
+       function updatePlayersGrid() {
+           const grid = document.getElementById('playersGrid');
+           grid.innerHTML = '';
+
+           players.forEach((player, index) => {
+               const isDealer = index === currentDealer;
+               const hasLoss = player.losses > 0;
+
+               let cardClass = 'player-card';
+               if (isDealer) cardClass += ' dealer sitting-out';
+               if (hasLoss) cardClass += ' has-loss';
+
+               const position = isDealer ? 'Geber' : player.position;
+
+               let badge = '';
+               if (isDealer) {
+                   badge = '<span class="dealer-badge">GEBER</span>';
+               }
+
+               const html = `
+                   <div class="${cardClass}" data-position="${position}" data-player="${index}">
+                       ${badge}
+                       <div class="player-avatar">${player.name.charAt(0)}</div>
+                       <div class="player-name">${player.name}</div>
+                       <div class="player-score">${player.score}</div>
+                       <div class="loss-indicator">${player.losses} Verluste</div>
+                   </div>
+               `;
+
+               grid.innerHTML += html;
+           });
+
+           // Dropdown aktualisieren (Geber ausblenden)
+           const playerSelect = document.getElementById('player');
+           playerSelect.innerHTML = '';
+           players.forEach((player, index) => {
+               if (index !== currentDealer) {
+                   const option = document.createElement('option');
+                   option.value = index;
+                   option.textContent = `${player.name} (${player.position})`;
+                   playerSelect.appendChild(option);
+               }
+           });
+       }
+
+       function addGame() {
+           const soloPlayerIndex = parseInt(document.getElementById('player').value);
+           const gameValue = parseInt(document.getElementById('calculatedValue').textContent);
+           const won = document.getElementById('result').value === 'won';
+           const wasBockGame = bockGamesRemaining > 0;
+
+           currentRound++;
+
+           // Spiel-Details
+           const gameType = document.getElementById('gameType');
+           const jacks = document.getElementById('jacks');
+           const hand = document.getElementById('hand').checked;
+           const schneiderErzielt = document.getElementById('schneiderErzielt').checked;
+           const schneider = document.getElementById('schneider').checked;
+           const schwarzErzielt = document.getElementById('schwarzErzielt').checked;
+           const schwarz = document.getElementById('schwarz').checked;
+
+           const gameOption = gameType.options[gameType.selectedIndex].text;
+           const gameName = gameOption.split(' ')[0];
+           const isNull = gameOption.toLowerCase().startsWith('null');
+           const jacksText = isNull ? '—' :
+               jacks.options[jacks.selectedIndex].text.split(' ')[0] + ' ' +
+               jacks.options[jacks.selectedIndex].text.split(' ')[1];
+
+           let stufe = [];
+           if (!isNull && hand) stufe.push('Hand');
+           if (schneiderErzielt) stufe.push('Schneider');
+           if (schneider) stufe.push('Schneider ang.');
+           if (schwarzErzielt) stufe.push('Schwarz');
+           if (schwarz) stufe.push('Schwarz ang.');
+           const stufeText = stufe.length > 0 ? stufe.join(', ') : '-';
+
+           // Tabellenzeile
+           const tbody = document.getElementById('historyBody');
+           const newRow = document.createElement('tr');
+           if (wasBockGame) newRow.style.background = '#fff8f8';
+
+           const resultLabel = won ? '✅' : '❌';
+           const bockBadge = wasBockGame ? '<span class="badge-bock">BOCK</span>' : '';
+           const typeKey = gameName.toLowerCase() === 'grand' ? 'grand' : gameName.toLowerCase() === 'null' ? 'null' : 'farb';
+
+           let rowHtml = `
+               <td>${currentRound}${bockBadge}</td>
+               <td>${players[currentDealer].name}</td>
+               <td>${players[soloPlayerIndex].name} ${resultLabel}</td>
+               <td><span class="game-type-badge badge-${typeKey}">${gameName}</span></td>
+               <td class="jacks-info">${jacksText}</td>
+               <td>${stufeText}</td>
+               <td>${gameValue}${wasBockGame ? ' 🔴' : ''}</td>
+           `;
+
+           // Punkte eintragen (gameValue ist bereits bock-verdoppelt aus calculateValue)
+           players.forEach((player, index) => {
+               const isSolo = index === soloPlayerIndex;
+               const isDealer = index === currentDealer;
+
+               if (isDealer) {
+                   rowHtml += '<td class="empty-entry">—</td>';
+               } else if (isSolo) {
+                   if (won) {
+                       rowHtml += '<td class="empty-entry">—</td>';
+                   } else {
+                       rowHtml += `<td class="minus-entry">-${gameValue}</td>`;
+                       player.score -= gameValue;
+                       player.losses++;
+                   }
+               } else {
+                   if (won) {
+                       rowHtml += `<td class="minus-entry">-${gameValue}</td>`;
+                       player.score -= gameValue;
+                       player.losses++;
+                   } else {
+                       rowHtml += '<td class="empty-entry">—</td>';
+                   }
+               }
+           });
+
+           newRow.innerHTML = rowHtml;
+           tbody.insertBefore(newRow, tbody.firstChild);
+
+           // Bock-Auslöser: Alleinspieler verliert → automatisch neue Bockrunde
+           if (!won) {
+               triggerBock(1, false);
+           }
+
+           // Bock-Zähler dekrementieren
+           if (wasBockGame) {
+               bockGamesRemaining--;
+           }
+
+           // Geber rotieren
+           currentDealer = (currentDealer + 1) % 4;
+
+           // UI aktualisieren
+           document.getElementById('roundNumber').textContent = currentRound + 1;
+           updateBockDisplay();
+           updateGeberSequence();
+           updatePlayersGrid();
+           calculateValue();
+       }
+
+       // count = Anzahl Bockrunden (1 oder 2), manual = ob per Button
+       function triggerBock(count = 1, manual = true) {
+           bockGamesRemaining += count * 4;
+           bockTotalTriggered += count;
+           updateBockDisplay();
+           if (manual) calculateValue();
+       }
+
+       function removeBock() {
+           if (bockGamesRemaining >= 4) {
+               bockGamesRemaining -= 4;
+               bockTotalTriggered = Math.max(0, bockTotalTriggered - 1);
+           } else if (bockGamesRemaining > 0) {
+               // Rest-Spiele einer angefangenen Runde löschen
+               bockGamesRemaining = 0;
+               bockTotalTriggered = Math.max(0, bockTotalTriggered - 1);
+           }
+           updateBockDisplay();
+           calculateValue();
+       }
+
+       function updateBockDisplay() {
+           const banner = document.getElementById('bockBanner');
+           const title = document.getElementById('bockTitle');
+           const remaining = document.getElementById('bockRemaining');
+           const total = document.getElementById('bockTotal');
+
+           remaining.textContent = bockGamesRemaining;
+           document.getElementById('bockRounds').textContent = Math.ceil(bockGamesRemaining / 4);
+           total.textContent = bockTotalTriggered;
+
+           if (bockGamesRemaining > 0) {
+               banner.classList.remove('inactive');
+               title.textContent = '🔴 BOCKRUNDE AKTIV — Alle Werte ×2!';
+           } else {
+               banner.classList.add('inactive');
+               title.textContent = '🃏 Keine Bockrunde aktiv';
+           }
+       }
+
+       function toggleBockRules() {
+           const box = document.getElementById('bockRulesBox');
+           box.style.display = box.style.display === 'none' ? 'block' : 'none';
+       }
+
+       function onSchneiderErzielt() {
+           if (!document.getElementById('schneiderErzielt').checked) {
+               document.getElementById('schneider').checked = false;
+           }
+           calculateValue();
+       }
+
+       function onSchneiderAng() {
+           if (document.getElementById('schneider').checked) {
+               document.getElementById('schneiderErzielt').checked = true;
+           }
+           calculateValue();
+       }
+
+       function onSchwarzErzielt() {
+           if (document.getElementById('schwarzErzielt').checked) {
+               document.getElementById('schneiderErzielt').checked = true;
+           } else {
+               document.getElementById('schwarz').checked = false;
+           }
+           calculateValue();
+       }
+
+       function onSchwarzAng() {
+           if (document.getElementById('schwarz').checked) {
+               document.getElementById('schwarzErzielt').checked = true;
+               document.getElementById('schneiderErzielt').checked = true;
+           }
+           calculateValue();
+       }
+
+       function setBockGames() {
+           const val = parseInt(document.getElementById('bockSetInput').value);
+           if (!isNaN(val) && val >= 0) {
+               bockGamesRemaining = val;
+               updateBockDisplay();
+               calculateValue();
+               document.getElementById('bockSetInput').value = '';
+           }
+       }
+   </script>
+</body>
+</html>
