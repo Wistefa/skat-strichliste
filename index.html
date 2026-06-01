@@ -134,17 +134,17 @@
        .players-grid {
            display: grid;
            grid-template-columns: repeat(4, 1fr);
-           gap: 12px;
-           margin-bottom: 18px;
+           gap: 6px;
+           margin-bottom: 10px;
        }
 
        .player-card {
            background: linear-gradient(145deg, #fffef5, #f8f0d8);
-           border-radius: 12px;
-           padding: 12px;
-           padding-top: 20px;
+           border-radius: 8px;
+           padding: 6px;
+           padding-top: 14px;
            text-align: center;
-           border: 3px solid #d4b060;
+           border: 2px solid #d4b060;
            transition: all 0.3s ease;
            position: relative;
        }
@@ -174,26 +174,26 @@
        .player-card::before {
            content: attr(data-position);
            position: absolute;
-           top: 5px;
-           right: 10px;
-           font-size: 0.8rem;
+           top: 3px;
+           right: 5px;
+           font-size: 0.65rem;
            color: #666;
            font-weight: bold;
        }
 
        .player-avatar {
-           width: 42px;
-           height: 42px;
+           width: 24px;
+           height: 24px;
            background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
            border-radius: 50%;
-           margin: 0 auto 6px;
+           margin: 0 auto 3px;
            display: flex;
            align-items: center;
            justify-content: center;
            color: #f0d080;
-           font-size: 1.1rem;
+           font-size: 0.7rem;
            font-weight: bold;
-           border: 2px solid #c8952a;
+           border: 1px solid #c8952a;
        }
 
        .player-card.sitting-out .player-avatar {
@@ -202,47 +202,48 @@
 
        .player-name {
            font-weight: bold;
-           margin-bottom: 5px;
+           margin-bottom: 2px;
+           font-size: 0.8rem;
            color: #333;
        }
 
        .player-score {
-           font-size: 1.3rem;
+           font-size: 1rem;
            font-weight: bold;
            color: #2c3e50;
        }
 
        .loss-indicator {
-           font-size: 0.8rem;
+           font-size: 0.65rem;
            color: #f44336;
-           margin-top: 5px;
+           margin-top: 2px;
            font-weight: bold;
        }
 
        .dealer-badge {
            position: absolute;
-           top: -10px;
+           top: -8px;
            left: 50%;
            transform: translateX(-50%);
            background: #43a047;
            color: white;
-           padding: 3px 12px;
-           border-radius: 12px;
-           font-size: 0.75rem;
+           padding: 1px 6px;
+           border-radius: 8px;
+           font-size: 0.6rem;
            font-weight: bold;
            z-index: 10;
        }
 
        .sitting-out-badge {
            position: absolute;
-           top: -10px;
+           top: -8px;
            left: 50%;
            transform: translateX(-50%);
            background: #757575;
            color: white;
-           padding: 3px 12px;
-           border-radius: 12px;
-           font-size: 0.75rem;
+           padding: 1px 6px;
+           border-radius: 8px;
+           font-size: 0.6rem;
            font-weight: bold;
        }
 
@@ -840,15 +841,15 @@
                gap: 10px;
            }
 
-           .player-card { padding: 14px; padding-top: 24px; }
+           .player-card { padding: 5px; padding-top: 12px; }
 
            .player-avatar {
-               width: 46px;
-               height: 46px;
-               font-size: 1.2rem;
+               width: 22px;
+               height: 22px;
+               font-size: 0.65rem;
            }
 
-           .player-score { font-size: 1.4rem; }
+           .player-score { font-size: 0.95rem; }
 
            /* ── Setup ── */
            .setup-section { padding: 14px; }
