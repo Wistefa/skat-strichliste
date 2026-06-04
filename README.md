@@ -12,7 +12,9 @@ Strichliste für 4 Spieler mit automatischer Geberrotation, Spielwert-Berechnung
 - **Bockrunden** – automatisch bei Niederlage, stapelbar, manuell auslösbar
 - **Strichliste** – nur Minuszahlen werden eingetragen (Verlust-Prinzip)
 - **Vorschau** – zeigt vor dem Eintragen wer welchen Strich bekommt
-- **Speichern/Laden** – Spieltag als JSON sichern und wiederherstellen (iOS: Share-Sheet)
+- **💾 FAB-Button** – Spieltag mit eigenem Dateinamen als JSON sichern; bei verbundenem iCloud-Datenpool direkt in den Ordner, sonst Download
+- **iCloud Datenpool** – einmalig Ordner verbinden, danach wird nach jeder Runde automatisch `daten.json` gesichert (Chrome/Edge)
+- **Laden** – JSON-Datei importieren und Spielstand vollständig wiederherstellen
 
 ## Technik
 
